@@ -1,0 +1,39 @@
+---
+# Python 3.11 Setup on Ubuntu 22.04 using deadsnakes PPA
+
+- name: Install software-properties-common for PPA support
+  ansible.builtin.apt:
+    name: software-properties-common
+    state: present
+    update_cache: true
+
+- name: Add deadsnakes PPA for Python 3.11
+  ansible.builtin.apt_repository:
+    repo: ppa:deadsnakes/ppa
+    state: present
+
+- name: Install Python 3.11 and development packages
+  ansible.builtin.apt:
+    name: "{{ python_packages }}"
+    state: present
+    update_cache: true
+
+- name: Create application parent directory
+  ansible.builtin.file:
+    path: "{{ python_venv_path | dirname }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure Python 3.11 virtualenv exists
+  ansible.builtin.command:
+    cmd: "python3.11 -m venv {{ python_venv_path }}"
+    creates: "{{ python_venv_path }}/bin/activate"
+
+- name: Upgrade pip and setuptools inside virtualenv
+  ansible.builtin.pip:
+    name:
+      - pip>=23.0
+      - setuptools
+      - wheel
+    virtualenv: "{{ python_venv_path }}"
+    state: latest

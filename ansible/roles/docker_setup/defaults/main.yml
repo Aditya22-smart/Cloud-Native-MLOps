@@ -1,0 +1,5 @@
+---
+docker_daemon_log_max_size: "50m"
+docker_daemon_log_max_file: "3"
+docker_users:
+  - "{{ ansible_user | default('aditya') }}"

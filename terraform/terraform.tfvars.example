@@ -1,0 +1,29 @@
+# terraform.tfvars.example
+# Copy to terraform.tfvars for local experimentation or reference workspaces/<env>.tfvars
+
+project_id  = "pricing-project-id"
+region      = "asia-south1"
+zone        = "asia-south1-a"
+environment = "staging"
+
+# Network configuration
+subnet_cidr          = "10.10.0.0/20"
+pods_subnet_cidr     = "10.11.0.0/16"
+services_subnet_cidr = "10.12.0.0/20"
+
+# Master authorized networks for GKE (Aditya, Bishwajeet, Shreyas public IPs)
+master_authorized_cidrs = [
+  {
+    cidr_block   = "203.0.113.10/32"
+    display_name = "team-dev-ip"
+  }
+]
+
+# GKE node sizing
+gke_machine_type = "e2-standard-2"
+gke_min_nodes    = 1
+gke_max_nodes    = 3
+
+# GCE VMs sizing
+ci_machine_type  = "e2-standard-2"
+elk_machine_type = "e2-standard-2"
