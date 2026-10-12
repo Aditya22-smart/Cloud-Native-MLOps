@@ -1,0 +1,38 @@
+---
+# site.yml: Main playbook applying roles to respective target VM groups
+
+# 1. Base Docker setup on CI and ELK hosts
+- name: Setup Docker on CI and ELK hosts
+  hosts: ci:elk
+  become: true
+  roles:
+    - docker_setup
+
+# 2. Host security hardening (UFW, SSH key-only, sysctl tuning)
+# CAUTION: Never run this role against the shared development VM.
+- name: Apply security hardening to target cloud VMs
+  hosts: ci:elk:app
+  become: true
+  roles:
+    - security_hardening
+
+# 3. Python 3.11 environment setup on standalone application hosts
+- name: Setup Python environment on Application VM
+  hosts: app
+  become: true
+  roles:
+    - python_setup
+
+# 4. Deploy Pricing Application with Gunicorn under systemd
+- name: Deploy Dynamic Pricing Microservice
+  hosts: app
+  become: true
+  roles:
+    - app_deploy
+
+# 5. Monitoring setup (Filebeat shipping to Logstash)
+- name: Setup Filebeat log shipper
+  hosts: app:ci
+  become: true
+  roles:
+    - monitoring_setup

@@ -1,0 +1,6 @@
+# backend.hcl.example
+# Copy to backend.hcl (gitignored) and populate with your GCP project state bucket:
+# terraform init -backend-config=backend.hcl
+
+bucket = "PROJECT_ID-tfstate"
+prefix = "terraform/state"

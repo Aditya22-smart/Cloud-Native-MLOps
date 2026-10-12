@@ -1,0 +1,22 @@
+---
+# Global Ansible variables across all hosts
+project_name: "pricing"
+environment_name: "staging"
+app_user: "pricing"
+app_group: "pricing"
+app_uid: 10001
+app_gid: 10001
+app_home: "/opt/pricing"
+app_port: 5000
+
+# Python environment
+python_version: "3.11"
+venv_path: "/opt/pricing/venv"
+
+# Git repository deployment
+repo_url: "https://github.com/Aditya22-smart/Cloud-Native-MLOps.git"
+repo_version: "dev"
+
+# Monitoring
+logstash_host: "10.10.0.11"
+logstash_port: 5044

@@ -1,0 +1,5 @@
+---
+filebeat_version: "8.11.0"
+filebeat_logstash_host: "{{ logstash_host | default('127.0.0.1') }}"
+filebeat_logstash_port: "{{ logstash_port | default(5044) }}"
+filebeat_app_log_path: "/var/log/pricing/*.log"

@@ -1,0 +1,52 @@
+---
+# Security hardening role
+# SAFETY NOTE: ALWAYS allow SSH port 22 BEFORE enabling UFW to prevent lockout.
+
+- name: Install security packages
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - unattended-upgrades
+      - fail2ban
+    state: present
+    update_cache: true
+
+- name: Configure SSH to disable password and root login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+    validate: '/usr/sbin/sshd -t -f %s'
+  loop:
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+    - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+  notify: Restart sshd
+
+- name: Allow SSH before enabling UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ ssh_port | string }}"
+    proto: tcp
+
+- name: Allow additional configured ports in UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ item | string }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports }}"
+
+- name: Enable UFW firewall with default deny incoming
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Apply kernel sysctl hardening
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop: "{{ sysctl_settings }}"
