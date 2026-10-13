@@ -1,0 +1,34 @@
+{
+  "Base_Price": {
+    "type": "float",
+    "description": "Original listed price of the product"
+  },
+  "Competitor_Price": {
+    "type": "float",
+    "description": "Closest competitor's current price"
+  },
+  "Inventory_Level": {
+    "type": "integer",
+    "description": "Units currently in stock"
+  },
+  "Units_Sold_Past_7D": {
+    "type": "integer",
+    "description": "Units sold in trailing 7 days"
+  },
+  "Promotion_Type": {
+    "type": "category",
+    "description": "none | percentage | bundle | clearance"
+  },
+  "Discount_Pct": {
+    "type": "float",
+    "description": "Discount percentage applied, 0-100"
+  },
+  "Seasonal_Trend": {
+    "type": "float",
+    "description": "Seasonal demand multiplier"
+  },
+  "Optimal_Price": {
+    "type": "float",
+    "description": "TARGET VARIABLE"
+  }
+}
