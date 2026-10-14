@@ -1,4 +1,12 @@
 services:
+  selenium:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+    shm_size: 2gb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
   pricing-api:
     build:
       context: .

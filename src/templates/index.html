@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dynamic Pricing</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px;
+           margin: 2rem auto; padding: 0 1rem; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    label { display: grid; gap: .35rem; }
+    input, select, button { padding: .65rem; font: inherit; }
+    button { cursor: pointer; }
+    #result { margin-top: 1rem; white-space: pre-wrap; }
+    @media (max-width: 560px) {
+      form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Dynamic Pricing</h1>
+  <p>Enter product information to estimate an optimal price.</p>
+
+  <form id="pricing-form">
+    <label>Base price
+      <input id="Base_Price" name="Base_Price" type="number"
+             min="0.01" step="any" value="100" required>
+    </label>
+    <label>Competitor price
+      <input id="Competitor_Price" name="Competitor_Price" type="number"
+             min="0.01" step="any" value="95" required>
+    </label>
+    <label>Inventory level
+      <input id="Inventory_Level" name="Inventory_Level" type="number"
+             min="0" step="1" value="250" required>
+    </label>
+    <label>Units sold in past 7 days
+      <input id="Units_Sold_Past_7D" name="Units_Sold_Past_7D"
+             type="number" min="0" step="1" value="80" required>
+    </label>
+    <label>Promotion type
+      <select id="Promotion_Type" name="Promotion_Type">
+        <option value="none">None</option>
+        <option value="percentage" selected>Percentage</option>
+        <option value="bundle">Bundle</option>
+        <option value="clearance">Clearance</option>
+      </select>
+    </label>
+    <label>Discount (%)
+      <input id="Discount_Pct" name="Discount_Pct" type="number"
+             min="0" max="100" step="any" value="10" required>
+    </label>
+    <label>Seasonal trend
+      <input id="Seasonal_Trend" name="Seasonal_Trend" type="number"
+             min="0.01" step="any" value="1.1" required>
+    </label>
+    <button type="submit">Predict price</button>
+  </form>
+
+  <p id="result" role="status" aria-live="polite"></p>
+
+  <script>
+    const form = document.getElementById("pricing-form");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      result.textContent = "Calculating…";
+
+      const payload = {
+        Base_Price: Number(form.Base_Price.value),
+        Competitor_Price: Number(form.Competitor_Price.value),
+        Inventory_Level: Number(form.Inventory_Level.value),
+        Units_Sold_Past_7D: Number(form.Units_Sold_Past_7D.value),
+        Promotion_Type: form.Promotion_Type.value,
+        Discount_Pct: Number(form.Discount_Pct.value),
+        Seasonal_Trend: Number(form.Seasonal_Trend.value)
+      };
+
+      try {
+        const response = await fetch("/api/predict", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Prediction failed");
+        }
+
+        result.textContent =
+          "Predicted price: " + Number(data.predicted_price).toFixed(2);
+      } catch (error) {
+        result.textContent = "Error: " + error.message;
+      }
+    });
+  </script>
+</body>
+</html>

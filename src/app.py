@@ -1,15 +1,16 @@
-import logging
-import os
+
 import time
-from pathlib import Path
 
-import joblib
 import pandas as pd
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
+from src.config import RETRAIN_TOKEN
+from src.logger import get_logger
+from src.model_singleton import model_manager
+model_manager.get_model().named_steps["model"].n_jobs = 1
 
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "model" / "pipeline.pkl"
+app = Flask(__name__)
+logger = get_logger()
 
 NUMERIC_FEATURES = [
     "Base_Price",
@@ -19,38 +20,11 @@ NUMERIC_FEATURES = [
     "Discount_Pct",
     "Seasonal_Trend",
 ]
-CATEGORICAL_FEATURES = ["Promotion_Type"]
-FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
-
+FEATURES = NUMERIC_FEATURES + ["Promotion_Type"]
 PROMOTION_TYPES = {"none", "percentage", "bundle", "clearance"}
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("pricing-api")
-
-app = Flask(__name__)
-
-_model = None
-_model_error = None
-
-try:
-    if MODEL_PATH.is_file() and MODEL_PATH.stat().st_size > 0:
-        _model = joblib.load(MODEL_PATH)
-    else:
-        _model_error = "Trained model artifact is missing or empty."
-except Exception:
-    logger.exception("Failed to load model")
-    _model_error = "Trained model could not be loaded."
-
-
-def get_model():
-    """Return the loaded model or raise if unavailable."""
-    if _model is None:
-        raise RuntimeError(_model_error or "Model is unavailable.")
-    return _model
 
 
 def validate_payload(payload):
-    """Validate and normalize the seven model input fields."""
     if not isinstance(payload, dict):
         raise ValueError("Request body must be a JSON object.")
 
@@ -70,7 +44,6 @@ def validate_payload(payload):
 
         if not pd.notna(number) or number in (float("inf"), float("-inf")):
             raise ValueError(f"{name} must be finite.")
-
         values[name] = number
 
     for name in ("Inventory_Level", "Units_Sold_Past_7D"):
@@ -97,7 +70,6 @@ def validate_payload(payload):
             f"Promotion_Type must be one of {sorted(PROMOTION_TYPES)}."
         )
     values["Promotion_Type"] = promotion
-
     return values
 
 
@@ -124,23 +96,16 @@ def log_request(response):
 
 @app.get("/")
 def index():
-    return jsonify({
-        "service": "Cloud-Native MLOps Dynamic Pricing API",
-        "status": "running",
-        "endpoints": ["/health", "/api/predict", "/api/retrain"],
-    })
+    return render_template("index.html")
 
 
 @app.get("/health")
 def health():
-    if _model is None:
-        return jsonify({
-            "status": "unhealthy",
-            "model_loaded": False,
-            "error": _model_error or "Model unavailable.",
-        }), 503
-
-    return jsonify({"status": "healthy", "model_loaded": True}), 200
+    loaded = model_manager.is_loaded()
+    status = "healthy" if loaded else "unhealthy"
+    return jsonify({"status": status, "model_loaded": loaded}), (
+        200 if loaded else 503
+    )
 
 
 @app.post("/api/predict")
@@ -150,19 +115,14 @@ def predict():
 
     try:
         features = validate_payload(request.get_json(silent=True))
-        model = get_model()
+        model = model_manager.get_model()
         frame = pd.DataFrame([features], columns=FEATURES)
         predicted_price = float(model.predict(frame)[0])
 
         logger.info(
             "prediction_complete",
-            extra={
-                "client_ip": request.remote_addr,
-                "input_features": features,
-                "predicted_price": round(predicted_price, 2),
-            },
+            extra={"predicted_price": round(predicted_price, 2)},
         )
-
         return jsonify({"predicted_price": round(predicted_price, 2)}), 200
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -173,20 +133,17 @@ def predict():
 
 @app.post("/api/retrain")
 def retrain():
-    expected_token = os.environ.get("RETRAIN_TOKEN")
-    supplied_token = request.headers.get("X-Retrain-Token")
-
-    if not expected_token:
+    if not RETRAIN_TOKEN:
         return jsonify({
             "error": "Retraining is not configured on this service."
         }), 503
 
-    if supplied_token != expected_token:
+    supplied_token = request.headers.get("Authorization", "")
+    if supplied_token != f"Bearer {RETRAIN_TOKEN}":
         return jsonify({"error": "Unauthorized."}), 401
 
     return jsonify({
-        "error": "Retraining is not implemented yet. "
-                 "Use the training script for now."
+        "error": "Retraining is not implemented yet. Use the training script for now."
     }), 501
 
 

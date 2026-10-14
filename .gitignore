@@ -32,3 +32,10 @@ reports/screenshots/
 *.tfstate.*
 *.tfvars
 !*.example.tfvars
+# Generated datasets and trained model artifacts
+data/raw/
+data/pricing_dataset.csv
+src/model/pipeline.pkl
+
+# Local backups
+*.bak
