@@ -23,8 +23,11 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:8.11.3
     container_name: logstash
+    ports:
+      - "5080:5080"
     volumes:
       - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./monitoring/elasticsearch-template.json:/usr/share/logstash/templates/elasticsearch-template.json:ro
     depends_on:
       - elasticsearch
     networks:
