@@ -1,0 +1,31 @@
+{
+  "index_patterns": ["pricing-logs-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.lifecycle.name": "pricing-logs-ilm-policy",
+      "index.lifecycle.rollover_alias": "pricing-logs"
+    },
+    "mappings": {
+      "properties": {
+        "timestamp": { "type": "date" },
+        "client_ip": { "type": "ip" },
+        "input_features": {
+          "properties": {
+            "Base_Price": { "type": "float" },
+            "Competitor_Price": { "type": "float" },
+            "Inventory_Level": { "type": "integer" },
+            "Units_Sold_Past_7D": { "type": "integer" },
+            "Promotion_Type": { "type": "keyword" },
+            "Discount_Pct": { "type": "float" },
+            "Seasonal_Trend": { "type": "float" }
+          }
+        },
+        "predicted_price": { "type": "float" },
+        "latency_ms": { "type": "float" },
+        "http_status": { "type": "integer" }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: pricing-backendconfig
+  namespace: pricing
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /health
+    port: 5000

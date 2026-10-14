@@ -1,0 +1,55 @@
+---
+# Monitoring setup role: Filebeat shipping logs to Logstash
+
+- name: Create apt keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Elastic GPG key
+  ansible.builtin.get_url:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    dest: /etc/apt/keyrings/elasticsearch.asc
+    mode: '0644'
+    force: false
+
+- name: Add Elastic 8.x apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/elasticsearch.asc] https://artifacts.elastic.co/packages/8.x/apt stable main"
+    state: present
+    filename: elastic-8.x
+
+- name: Install Filebeat
+  ansible.builtin.apt:
+    name: filebeat
+    state: present
+    update_cache: true
+
+- name: Configure Filebeat log shipping to Logstash
+  ansible.builtin.copy:
+    dest: /etc/filebeat/filebeat.yml
+    content: |
+      filebeat.inputs:
+        - type: filestream
+          id: pricing-app-logs
+          enabled: true
+          paths:
+            - {{ filebeat_app_log_path }}
+          parsers:
+            - ndjson:
+                target: ""
+                add_error_key: true
+
+      output.logstash:
+        hosts: ["{{ filebeat_logstash_host }}:{{ filebeat_logstash_port }}"]
+
+      logging.level: info
+    mode: '0600'
+  notify: Restart filebeat
+
+- name: Enable and start Filebeat service
+  ansible.builtin.systemd:
+    name: filebeat
+    enabled: true
+    state: started
