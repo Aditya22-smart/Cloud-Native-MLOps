@@ -1,2 +1,49 @@
-.venv/
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform variable files and state configurations
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+backend.hcl
+!backend.hcl.example
+!.terraform.lock.hcl
+
+# Credentials and environment secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+credentials*.json
+secrets/
+
+# Python
 __pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Ansible
+*.retry
+vault-password.txt
+.vault_pass
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+ADITYA_TASK.md

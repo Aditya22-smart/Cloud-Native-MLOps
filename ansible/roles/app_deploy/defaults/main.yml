@@ -1,0 +1,12 @@
+---
+app_service_name: "pricing-api"
+app_directory: "/opt/pricing/app"
+app_user: "pricing"
+app_group: "pricing"
+app_uid: 10001
+app_gid: 10001
+app_env_file_mode: "0640"
+gunicorn_bind: "0.0.0.0:5000"
+gunicorn_workers: 2
+gunicorn_timeout: 120
+entrypoint: "src.app:app"

@@ -1,0 +1,98 @@
+---
+# Application deployment role (Gunicorn under systemd)
+
+- name: Create application dedicated system group
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    gid: "{{ app_gid }}"
+    state: present
+
+- name: Create application dedicated system user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    uid: "{{ app_uid }}"
+    group: "{{ app_group }}"
+    home: "{{ app_directory }}"
+    shell: /usr/sbin/nologin
+    system: true
+    state: present
+
+- name: Create application directory
+  ansible.builtin.file:
+    path: "{{ app_directory }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+
+- name: Deploy application source code
+  ansible.builtin.git:
+    repo: "{{ repo_url }}"
+    version: "{{ repo_version }}"
+    dest: "{{ app_directory }}"
+    force: true
+  become_user: "{{ app_user }}"
+  notify: Restart pricing-api service
+
+- name: Install requirements into virtualenv
+  ansible.builtin.pip:
+    requirements: "{{ app_directory }}/src/requirements.txt"
+    virtualenv: "{{ venv_path }}"
+  when: not ansible_check_mode
+  notify: Restart pricing-api service
+
+- name: Install Gunicorn WSGI server into virtualenv
+  ansible.builtin.pip:
+    name: gunicorn
+    virtualenv: "{{ venv_path }}"
+  notify: Restart pricing-api service
+
+- name: Render application environment file
+  ansible.builtin.copy:
+    dest: "{{ app_directory }}/.env"
+    content: |
+      MODEL_PATH={{ app_directory }}/src/model/pipeline.pkl
+      MODEL_VERSION=v1.0.0
+      LOGSTASH_HOST={{ logstash_host }}
+      PORT={{ app_port }}
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "{{ app_env_file_mode }}"
+  notify: Restart pricing-api service
+
+- name: Configure systemd service unit for Gunicorn
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ app_service_name }}.service"
+    content: |
+      [Unit]
+      Description=Cloud-Native MLOps Pricing API Service
+      After=network.target
+
+      [Service]
+      User={{ app_user }}
+      Group={{ app_group }}
+      WorkingDirectory={{ app_directory }}
+      EnvironmentFile={{ app_directory }}/.env
+      ExecStart={{ venv_path }}/bin/gunicorn \
+        --workers {{ gunicorn_workers }} \
+        --bind {{ gunicorn_bind }} \
+        --timeout {{ gunicorn_timeout }} \
+        --access-logfile - \
+        --error-logfile - \
+        {{ entrypoint }}
+      Restart=always
+      RestartSec=5s
+      PrivateTmp=true
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify:
+    - Reload systemd daemon
+    - Restart pricing-api service
+
+- name: Enable and start pricing-api service
+  ansible.builtin.systemd:
+    name: "{{ app_service_name }}"
+    enabled: true
+    state: started

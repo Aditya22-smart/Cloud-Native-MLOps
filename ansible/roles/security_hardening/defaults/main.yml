@@ -1,0 +1,8 @@
+---
+ssh_port: 22
+ufw_allowed_ports:
+  - 22
+sysctl_settings:
+  - { name: "net.ipv4.ip_forward", value: "1" }
+  - { name: "net.ipv4.conf.all.accept_redirects", value: "0" }
+  - { name: "net.ipv4.conf.all.send_redirects", value: "0" }
