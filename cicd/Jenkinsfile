@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+    environment {
+        // These will be configured securely in Jenkins or mapped to GCP
+        PROJECT_ID = 'your-gcp-project-id'
+        REGION = 'asia-south1'
+        GAR_REPO = "${REGION}-docker.pkg.dev/${PROJECT_ID}/pricing/pricing-api"
+        GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    }
+    stages {
+        stage('1. Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('2. Static Analysis & Quality Gate') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh 'sonar-scanner -Dproject.settings=cicd/sonar-project.properties'
+                }
+                timeout(time: 5, unit: 'MINUTES') {
+                    // This enforces the requirement to break the build if the gate fails
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('3. Build & Tag Docker Image') {
+            steps {
+                // Requires Bishwajeet's multi-stage Dockerfile in the root directory
+                sh "docker build -t ${GAR_REPO}:${GIT_SHA} -t ${GAR_REPO}:latest -f Dockerfile ."
+            }
+        }
+        stage('4. Push to Artifact Registry') {
+            steps {
+                sh "docker push ${GAR_REPO}:${GIT_SHA}"
+                sh "docker push ${GAR_REPO}:latest"
+            }
+        }
+    }
+}
