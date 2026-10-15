@@ -24,28 +24,20 @@ FEATURES = NUMERIC_FEATURES + ["Promotion_Type"]
 PROMOTION_TYPES = {"none", "percentage", "bundle", "clearance"}
 
 
-def validate_payload(payload):
-    if not isinstance(payload, dict):
-        raise ValueError("Request body must be a JSON object.")
+def _validate_numeric_field(name, value):
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be numeric.")
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{name} must be numeric.") from None
 
-    missing = sorted(set(FEATURES) - set(payload))
-    if missing:
-        raise ValueError(f"Missing required fields: {missing}")
+    if not pd.notna(number) or number in (float("inf"), float("-inf")):
+        raise ValueError(f"{name} must be finite.")
+    return number
 
-    values = {}
-    for name in NUMERIC_FEATURES:
-        value = payload[name]
-        if isinstance(value, bool):
-            raise ValueError(f"{name} must be numeric.")
-        try:
-            number = float(value)
-        except (TypeError, ValueError):
-            raise ValueError(f"{name} must be numeric.") from None
 
-        if not pd.notna(number) or number in (float("inf"), float("-inf")):
-            raise ValueError(f"{name} must be finite.")
-        values[name] = number
-
+def _validate_numeric_constraints(values):
     for name in ("Inventory_Level", "Units_Sold_Past_7D"):
         if not values[name].is_integer() or values[name] < 0:
             raise ValueError(f"{name} must be a non-negative integer.")
@@ -61,15 +53,29 @@ def validate_payload(payload):
     if values["Seasonal_Trend"] <= 0:
         raise ValueError("Seasonal_Trend must be greater than zero.")
 
-    promotion = payload["Promotion_Type"]
+
+def _validate_promotion(promotion):
     if not isinstance(promotion, str):
         raise ValueError("Promotion_Type must be a string.")
-    promotion = promotion.strip().lower()
-    if promotion not in PROMOTION_TYPES:
+    cleaned = promotion.strip().lower()
+    if cleaned not in PROMOTION_TYPES:
         raise ValueError(
             f"Promotion_Type must be one of {sorted(PROMOTION_TYPES)}."
         )
-    values["Promotion_Type"] = promotion
+    return cleaned
+
+
+def validate_payload(payload):
+    if not isinstance(payload, dict):
+        raise ValueError("Request body must be a JSON object.")
+
+    missing = sorted(set(FEATURES) - set(payload))
+    if missing:
+        raise ValueError(f"Missing required fields: {missing}")
+
+    values = {name: _validate_numeric_field(name, payload[name]) for name in NUMERIC_FEATURES}
+    _validate_numeric_constraints(values)
+    values["Promotion_Type"] = _validate_promotion(payload["Promotion_Type"])
     return values
 
 

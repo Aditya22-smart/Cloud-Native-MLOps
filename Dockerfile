@@ -27,11 +27,14 @@ ENV PATH="/opt/venv/bin:$PATH" \
 WORKDIR /app
 
 RUN groupadd --system app && \
-    useradd --system --gid app --home-dir /app app
+    useradd --system --gid app --home-dir /app app && \
+    mkdir -p /app/reports/screenshots && \
+    chown -R app:app /app
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app src/ /app/src/
 COPY --chown=app:app data/schemas/feature_schema.json /app/data/schemas/feature_schema.json
+COPY --chown=app:app tests/ /app/tests/
 
 USER app
 

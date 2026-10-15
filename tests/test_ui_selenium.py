@@ -34,7 +34,10 @@ def driver():
 
 
 def test_pricing_form_predicts_price(driver):
-    SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
     driver.get(BASE_URL)
 
     try:
@@ -66,7 +69,10 @@ def test_pricing_form_predicts_price(driver):
         ).text
 
     except Exception:
-        driver.save_screenshot(
-            str(SCREENSHOT_DIR / "test_pricing_form_failure.png")
-        )
+        try:
+            driver.save_screenshot(
+                str(SCREENSHOT_DIR / "test_pricing_form_failure.png")
+            )
+        except OSError:
+            pass
         raise

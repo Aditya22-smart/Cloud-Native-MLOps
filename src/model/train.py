@@ -66,7 +66,7 @@ def main():
     df = df.dropna(subset=[TARGET])
     X, y = df[FEATURES], df[TARGET].astype(float)
 
-    X_train, X_test, y_train, y_test = train_test_split(
+    x_train, x_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=args.seed
     )
 
@@ -85,8 +85,8 @@ def main():
 
     for name, estimator in candidates.items():
         pipeline = make_pipeline(estimator)
-        pipeline.fit(X_train, y_train)
-        predictions = pipeline.predict(X_test)
+        pipeline.fit(x_train, y_train)
+        predictions = pipeline.predict(x_test)
         mae = mean_absolute_error(y_test, predictions)
         rmse = np.sqrt(mean_squared_error(y_test, predictions))
         r2 = r2_score(y_test, predictions)
@@ -102,7 +102,7 @@ def main():
 
     print(f"Selected model (lowest validation MAE): {best_name}")
     print(f"Saved pipeline: {output}")
-    print(f"Training rows: {len(X_train)}; validation rows: {len(X_test)}")
+    print(f"Training rows: {len(x_train)}; validation rows: {len(x_test)}")
     print("Reminder: scores measure fit to the derived heuristic target.")
 
 
