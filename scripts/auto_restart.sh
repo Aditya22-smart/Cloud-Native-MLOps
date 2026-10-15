@@ -18,4 +18,4 @@ if ! docker ps --format '{{.Names}}' | grep -q "^pricing-api$"; then
 fi
 
 echo "[$(date)] All services healthy." >> $LOG_FILE
-exit 0chmod +x scripts/auto_restart.sh
+exit 0
