@@ -14,13 +14,13 @@ variable "environment" {
 }
 
 variable "writer_service_accounts" {
-  description = "List of service account emails granted write access"
-  type        = list(string)
-  default     = []
+  description = "Map of key-name to service account emails granted write access"
+  type        = map(string)
+  default     = {}
 }
 
 variable "reader_service_accounts" {
-  description = "List of service account emails granted read access"
-  type        = list(string)
-  default     = []
+  description = "Map of key-name to service account emails granted read access"
+  type        = map(string)
+  default     = {}
 }

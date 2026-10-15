@@ -7,7 +7,31 @@ resources:
 commonLabels:
   env: staging
 
+images:
+  - name: asia-south1-docker.pkg.dev/PROJECT_ID/pricing/pricing-api
+    newName: asia-south1-docker.pkg.dev/aditya-devops-lab/pricing/pricing-api
+    newTag: v1.0.0
+
 patches:
+  - patch: |-
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: pricing-api
+        namespace: pricing
+        annotations:
+          iam.gke.io/gcp-service-account: pricing-app-staging@aditya-devops-lab.iam.gserviceaccount.com
+  - patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: pricing-config
+        namespace: pricing
+      data:
+        GCS_MODEL_BUCKET: "aditya-devops-lab-staging-models"
+        APP_BASE_URL: "https://pricing-staging.sslip.io"
+        ELASTICSEARCH_URL: "http://10.10.0.3:9200"
+        LOGSTASH_HOST: "10.10.0.3"
   - patch: |-
       apiVersion: networking.k8s.io/v1
       kind: Ingress

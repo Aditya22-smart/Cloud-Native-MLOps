@@ -16,7 +16,7 @@ resource "google_artifact_registry_repository" "pricing" {
 
 # Writer IAM bindings (e.g. Jenkins CI service account)
 resource "google_artifact_registry_repository_iam_member" "writers" {
-  for_each   = toset(var.writer_service_accounts)
+  for_each   = var.writer_service_accounts
   project    = var.project_id
   location   = google_artifact_registry_repository.pricing.location
   repository = google_artifact_registry_repository.pricing.name
@@ -26,7 +26,7 @@ resource "google_artifact_registry_repository_iam_member" "writers" {
 
 # Reader IAM bindings (e.g. GKE Node service account)
 resource "google_artifact_registry_repository_iam_member" "readers" {
-  for_each   = toset(var.reader_service_accounts)
+  for_each   = var.reader_service_accounts
   project    = var.project_id
   location   = google_artifact_registry_repository.pricing.location
   repository = google_artifact_registry_repository.pricing.name

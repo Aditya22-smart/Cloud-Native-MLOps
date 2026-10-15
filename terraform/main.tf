@@ -54,6 +54,8 @@ resource "google_service_account_iam_member" "workload_identity_binding" {
   service_account_id = google_service_account.pricing_app.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[pricing/pricing-api]"
+
+  depends_on = [module.gke]
 }
 
 # Global Static IP for Ingress: pricing-ingress-ip
@@ -71,8 +73,12 @@ module "artifact_registry" {
   region      = var.region
   environment = var.environment
 
-  writer_service_accounts = [module.gce.jenkins_ci_service_account]
-  reader_service_accounts = [module.gke.node_service_account_email]
+  writer_service_accounts = {
+    jenkins_ci = module.gce.jenkins_ci_service_account
+  }
+  reader_service_accounts = {
+    gke_nodes = module.gke.node_service_account_email
+  }
 }
 
 # 6. Cloud Storage buckets for models and datasets
@@ -84,5 +90,7 @@ module "gcs" {
   environment   = var.environment
   force_destroy = var.force_destroy
 
-  pod_identity_service_accounts = [google_service_account.pricing_app.email]
+  pod_identity_service_accounts = {
+    pricing_app = google_service_account.pricing_app.email
+  }
 }

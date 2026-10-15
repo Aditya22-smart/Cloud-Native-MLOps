@@ -20,7 +20,7 @@ variable "force_destroy" {
 }
 
 variable "pod_identity_service_accounts" {
-  description = "List of GCP service account emails granted objectAdmin on models bucket"
-  type        = list(string)
-  default     = []
+  description = "Map of key-name to GCP service account emails granted objectAdmin on models bucket"
+  type        = map(string)
+  default     = {}
 }
