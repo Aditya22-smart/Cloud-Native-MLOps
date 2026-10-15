@@ -11,9 +11,13 @@ pipeline {
     stages {
         stage('1. Checkout') { steps { checkout scm } }
         stage('2. Static Analysis') {
+            environment {
+                // This pulls the path of the tool you named 'sonar-scanner' in Jenkins
+                SCANNER_HOME = tool 'sonar-scanner'
+            }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner -Dproject.settings=cicd/sonar-project.properties'
+                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dproject.settings=cicd/sonar-project.properties"
                 }
                 timeout(time: 5, unit: 'MINUTES') { waitForQualityGate abortPipeline: true }
             }
