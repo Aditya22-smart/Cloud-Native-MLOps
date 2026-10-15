@@ -2,8 +2,9 @@ import argparse
 import requests
 import statistics
 import sys
+import os
 
-ES_URL = "http://localhost:9200/pricing-logs-*/_search"
+ES_URL = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200/pricing-logs-*/_search")
 MIN_SAMPLE_SIZE = 30
 SIGMA_MULTIPLIER = 2.0
 
@@ -64,11 +65,20 @@ def main():
         if args.dry_run:
             print("[Dry Run] Skipping Jenkins retrain webhook.")
         else:
+            jenkins_url = os.getenv("JENKINS_URL")
+            jenkins_token = os.getenv("JENKINS_RETRAIN_TOKEN")
+            if jenkins_url and jenkins_token:
+                print("Triggering Jenkins retrain pipeline...")
+                try:
+                    requests.post(f"{jenkins_url}?token={jenkins_token}")
+                except Exception as e:
+                    print(f"Failed to trigger Jenkins: {e}")
+            else:
+                print("Warning: Jenkins webhook URL or Token not set in environment.")
+
             import subprocess
             subprocess.run(["python", "scripts/chatops_bot.py", f"🚨 DRIFT DETECTED: Price shift {drift:.2f} exceeded threshold {threshold:.2f}. Triggering Jenkins retrain pipeline!"])
-            # (Jenkins webhook call will be added here on Day 5 when Jenkins is running)
     else:
         print("Status: Stable. No drift detected.")
-
 if __name__ == "__main__":
     main()

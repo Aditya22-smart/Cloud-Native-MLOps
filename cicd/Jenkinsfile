@@ -1,32 +1,25 @@
 pipeline {
     agent any
     environment {
-        // These will be configured securely in Jenkins or mapped to GCP
         PROJECT_ID = 'your-gcp-project-id'
         REGION = 'asia-south1'
         GAR_REPO = "${REGION}-docker.pkg.dev/${PROJECT_ID}/pricing/pricing-api"
         GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+        // Injected securely via Jenkins Credentials Plugin
+        RETRAIN_TOKEN = credentials('pricing-api-retrain-token')
     }
     stages {
-        stage('1. Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-        stage('2. Static Analysis & Quality Gate') {
+        stage('1. Checkout') { steps { checkout scm } }
+        stage('2. Static Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh 'sonar-scanner -Dproject.settings=cicd/sonar-project.properties'
                 }
-                timeout(time: 5, unit: 'MINUTES') {
-                    // This enforces the requirement to break the build if the gate fails
-                    waitForQualityGate abortPipeline: true
-                }
+                timeout(time: 5, unit: 'MINUTES') { waitForQualityGate abortPipeline: true }
             }
         }
         stage('3. Build & Tag Docker Image') {
             steps {
-                // Requires Bishwajeet's multi-stage Dockerfile in the root directory
                 sh "docker build -t ${GAR_REPO}:${GIT_SHA} -t ${GAR_REPO}:latest -f Dockerfile ."
             }
         }
@@ -34,6 +27,15 @@ pipeline {
             steps {
                 sh "docker push ${GAR_REPO}:${GIT_SHA}"
                 sh "docker push ${GAR_REPO}:latest"
+            }
+        }
+        stage('5. Deploy to GKE') {
+            steps {
+                sh """
+                gcloud container clusters get-credentials pricing-staging --zone asia-south1-a --project ${PROJECT_ID}
+                kubectl set image deployment/pricing-api pricing-api=${GAR_REPO}:${GIT_SHA} -n pricing
+                kubectl rollout status deployment/pricing-api -n pricing
+                """
             }
         }
     }
