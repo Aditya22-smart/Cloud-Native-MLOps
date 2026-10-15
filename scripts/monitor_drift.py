@@ -77,7 +77,7 @@ def main():
                 print("Warning: Jenkins webhook URL or Token not set in environment.")
 
             import subprocess
-            subprocess.run(["python", "scripts/chatops_bot.py", f"🚨 DRIFT DETECTED: Price shift {drift:.2f} exceeded threshold {threshold:.2f}. Triggering Jenkins retrain pipeline!"])
+            subprocess.run([sys.executable, "scripts/chatops_bot.py", f"🚨 DRIFT DETECTED: Price shift {drift:.2f} exceeded threshold {threshold:.2f}. Triggering Jenkins retrain pipeline!"])
     else:
         print("Status: Stable. No drift detected.")
 if __name__ == "__main__":

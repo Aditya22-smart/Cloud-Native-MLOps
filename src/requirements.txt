@@ -6,3 +6,4 @@ selenium>=4.0.0
 requests
 gunicorn
 pytest
+pytest-cov

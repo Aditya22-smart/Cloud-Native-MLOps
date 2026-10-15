@@ -51,6 +51,7 @@ env/
 # Model and test artifacts
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 reports/screenshots/
 

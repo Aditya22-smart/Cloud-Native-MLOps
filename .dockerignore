@@ -9,6 +9,5 @@ htmlcov
 .env.*
 !.env.example
 *.bak
-tests/
 data/raw/
 data/pricing_dataset.csv

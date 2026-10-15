@@ -10,12 +10,20 @@ pipeline {
     }
     stages {
         stage('1. Checkout') { steps { checkout scm } }
-        stage('2. Static Analysis') {
+        stage('2. Static Analysis & SonarQube Quality Gate') {
             environment {
                 // This pulls the path of the tool you named 'sonar-scanner' in Jenkins
                 SCANNER_HOME = tool 'sonar-scanner'
             }
             steps {
+                sh '''
+                if ! docker image inspect ${GAR_REPO}:latest >/dev/null 2>&1 && ! docker image inspect dynamic-pricing-api:local >/dev/null 2>&1; then
+                    docker build -t dynamic-pricing-api:local -f Dockerfile .
+                fi
+                TEST_IMAGE=$(docker image inspect dynamic-pricing-api:local >/dev/null 2>&1 && echo "dynamic-pricing-api:local" || echo "${GAR_REPO}:latest")
+                docker run --rm -u root -v "$(pwd):/workspace" -w /workspace ${TEST_IMAGE} \
+                    pytest -o cache_dir=/tmp/.pytest_cache --cov=src --cov-report=xml:coverage.xml tests/test_api.py tests/test_model_singleton.py
+                '''
                 withSonarQubeEnv('SonarQube') {
                     sh "${SCANNER_HOME}/bin/sonar-scanner -Dproject.settings=cicd/sonar-project.properties"
                 }
@@ -52,6 +60,7 @@ pipeline {
                 mkdir -p reports/screenshots
                 docker run --rm \
                     --network cicd_cicd-net \
+                    -v "$(pwd)/reports/screenshots:/app/reports/screenshots" \
                     -e APP_BASE_URL=${APP_BASE_URL} \
                     -e SELENIUM_REMOTE_URL=${SELENIUM_REMOTE_URL} \
                     -e PYTHONPATH=/app \
