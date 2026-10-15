@@ -29,7 +29,7 @@ patches:
         namespace: pricing
       data:
         GCS_MODEL_BUCKET: "aditya-devops-lab-staging-models"
-        APP_BASE_URL: "https://pricing-staging.sslip.io"
+        APP_BASE_URL: "https://pricing-staging.136.81.137.108.sslip.io"
         ELASTICSEARCH_URL: "http://10.10.0.3:9200"
         LOGSTASH_HOST: "10.10.0.3"
   - patch: |-
@@ -38,10 +38,50 @@ patches:
       metadata:
         name: pricing-ingress
         namespace: pricing
+        annotations:
+          kubernetes.io/ingress.allow-http: "true"
       spec:
+        defaultBackend:
+          service:
+            name: pricing-ui
+            port:
+              number: 80
         rules:
+          - host: pricing-staging.136.81.137.108.sslip.io
+            http:
+              paths:
+                - path: /api
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: pricing-api
+                      port:
+                        number: 80
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: pricing-ui
+                      port:
+                        number: 80
           - host: pricing-staging.sslip.io
             http:
+              paths:
+                - path: /api
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: pricing-api
+                      port:
+                        number: 80
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: pricing-ui
+                      port:
+                        number: 80
+          - http:
               paths:
                 - path: /api
                   pathType: Prefix
