@@ -35,8 +35,12 @@ pipeline {
         }
         stage('4. Push to Artifact Registry') {
             steps {
-                sh "docker push ${GAR_REPO}:${GIT_SHA}"
-                sh "docker push ${GAR_REPO}:latest"
+                sh """
+                gcloud auth application-default print-access-token 2>/dev/null | docker login -u oauth2accesstoken --password-stdin https://${REGION}-docker.pkg.dev || \
+                gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://${REGION}-docker.pkg.dev
+                docker push ${GAR_REPO}:${GIT_SHA}
+                docker push ${GAR_REPO}:latest
+                """
             }
         }
         stage('5. Deploy to GKE') {
