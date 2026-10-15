@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        PROJECT_ID = 'your-gcp-project-id'
+        PROJECT_ID = 'aditya-devops-lab'
         REGION = 'asia-south1'
         GAR_REPO = "${REGION}-docker.pkg.dev/${PROJECT_ID}/pricing/pricing-api"
         GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
