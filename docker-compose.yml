@@ -19,6 +19,7 @@ services:
       - "5000:5000"
     environment:
       PORT: "5000"
+      LOGSTASH_URL: "http://logstash:5080"
       # Set RETRAIN_TOKEN in your environment if retraining authorization is needed.
       RETRAIN_TOKEN: "${RETRAIN_TOKEN:-}"
     restart: unless-stopped

@@ -20,6 +20,7 @@ class JsonFormatter(logging.Formatter):
             "latency_ms",
             "model_version",
             "predicted_price",
+            "input_features",
         ):
             value = getattr(record, field, None)
             if value is not None:

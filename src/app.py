@@ -1,10 +1,12 @@
-
+import threading
 import time
+from datetime import datetime, timezone
 
 import pandas as pd
+import requests
 from flask import Flask, jsonify, render_template, request
 
-from src.config import RETRAIN_TOKEN
+from src.config import LOGSTASH_URL, RETRAIN_TOKEN
 from src.logger import get_logger
 from src.model_singleton import model_manager
 model_manager.get_model().named_steps["model"].n_jobs = 1
@@ -114,6 +116,15 @@ def health():
     )
 
 
+def _forward_to_logstash(payload):
+    if not LOGSTASH_URL:
+        return
+    try:
+        requests.post(LOGSTASH_URL, json=payload, timeout=0.8)
+    except Exception:
+        pass
+
+
 @app.post("/api/predict")
 def predict():
     if not request.is_json:
@@ -125,10 +136,24 @@ def predict():
         frame = pd.DataFrame([features], columns=FEATURES)
         predicted_price = float(model.predict(frame)[0])
 
-        logger.info(
-            "prediction_complete",
-            extra={"predicted_price": round(predicted_price, 2)},
+        latency_ms = round(
+            (time.perf_counter() - getattr(request, "start_time", time.perf_counter())) * 1000,
+            2,
         )
+        client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+        log_payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            "client_ip": client_ip,
+            "input_features": features,
+            "predicted_price": round(predicted_price, 2),
+            "latency_ms": latency_ms,
+            "http_status": 200,
+        }
+
+        logger.info("prediction_complete", extra=log_payload)
+        threading.Thread(target=_forward_to_logstash, args=(log_payload,), daemon=True).start()
+
         return jsonify({"predicted_price": round(predicted_price, 2)}), 200
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400

@@ -1,6 +1,6 @@
 #!/bin/bash
 KIBANA_URL="http://localhost:5601"
-DASHBOARD_FILE="monitoring/kibana_dashboard.json"
+DASHBOARD_FILE="monitoring/kibana_dashboard.ndjson"
 
 if [ ! -f "$DASHBOARD_FILE" ]; then
   echo "Error: $DASHBOARD_FILE not found. Export it from the Kibana UI first."
